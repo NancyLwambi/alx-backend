@@ -1,3 +1,5 @@
+
+
 #!/usr/bin/python3
 """ LFU Caching """
 from base_caching import BaseCaching
@@ -7,7 +9,6 @@ from collections import OrderedDict
 class LFUCache(BaseCaching):
     """ Class that inherits from BaseCaching and is a caching system """
     def __init__(self):
-        """init method"""
         super().__init__()
         self.lru_cache = OrderedDict()
         self.lfu_cache = {}
@@ -48,3 +49,4 @@ class LFUCache(BaseCaching):
             else:
                 self.lfu_cache[key] = 1
             return value
+            
