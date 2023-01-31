@@ -1,72 +1,66 @@
 #!/usr/bin/python3
-""" LFU Caching """
+''' LFU Caching: Create a class LFUCache that inherits from BaseCaching
+                 and is a caching system '''
 
-from base_caching import BaseCaching
+BaseCaching = __import__('base_caching').BaseCaching
 
 
 class LFUCache(BaseCaching):
-    """ LFU caching """
+    ''' An LFU cache.
+        Inherits all behaviors from BaseCaching except, upon any attempt to add
+        an entry to the cache when it is at max capacity (as specified by
+        BaseCaching.MAX_ITEMS), it discards the least frequently used entry to
+        accommodate for the new one.
+        Attributes:
+          __init__ - method that initializes class instance
+          put - method that adds a key/value pair to cache
+          get - method that retrieves a key/value pair from cache '''
 
     def __init__(self):
-        """ Constructor """
+        ''' Initialize class instance. '''
         super().__init__()
-        self.queue = []
-        self.counter = {}
+        self.keys = []
+        self.uses = {}
 
     def put(self, key, item):
-        """ Puts item in cache """
-        if key is None or item is None:
-            return
+        ''' Add key/value pair to cache data.
+            If cache is at max capacity (specified by BaseCaching.MAX_ITEMS),
+            discard least frequently used entry to accommodate new entry. '''
 
-        self.cache_data[key] = item
-
-        item_count = self.counter.get(key, None)
-
-        if item_count is not None:
-            self.counter[key] += 1
-        else:
-            self.counter[key] = 1
-
-        if len(self.cache_data) > BaseCaching.MAX_ITEMS:
-            first = self.get_first_list(self.queue)
-            if first:
-                self.queue.pop(0)
-                del self.cache_data[first]
-                del self.counter[first]
-                print("DISCARD: {}".format(first))
-
-        if key not in self.queue:
-            self.queue.insert(0, key)
-        self.mv_right_list(key)
+        if key is not None and item is not None:
+            if (len(self.keys) == BaseCaching.MAX_ITEMS and
+                    key not in self.keys):
+                discard = self.keys.pop(self.keys.index(self.findLFU()))
+                del self.cache_data[discard]
+                del self.uses[discard]
+                print('DISCARD: {:s}'.format(discard))
+            self.cache_data[key] = item
+            if key not in self.keys:
+                self.keys.append(key)
+                self.uses[key] = 0
+            else:
+                self.keys.append(self.keys.pop(self.keys.index(key)))
+                self.uses[key] += 1
 
     def get(self, key):
-        """ Gets item from cache """
-        item = self.cache_data.get(key, None)
-        if item is not None:
-            self.counter[key] += 1
-            self.mv_right_list(key)
-        return item
+        ''' Return value stored in `key` key of cache.
+            If key is None or does not exist in cache, return None. '''
+        if key is not None and key in self.cache_data:
+            self.keys.append(self.keys.pop(self.keys.index(key)))
+            self.uses[key] += 1
+            return self.cache_data[key]
+        return None
 
-    def mv_right_list(self, item):
-        """ Moves element to the right, taking into account LFU """
-        length = len(self.queue)
+    def findLFU(self):
+        ''' Return key of least frequently used item in cache.
+            If multiple items have the same amount of uses, return the least
+            recently used one. '''
+        items = list(self.uses.items())
+        freqs = [item[1] for item in items]
+        least = min(freqs)
 
-        idx = self.queue.index(item)
-        item_count = self.counter[item]
-
-        for i in range(idx, length):
-            if i != (length - 1):
-                nxt = self.queue[i + 1]
-                nxt_count = self.counter[nxt]
-
-                if nxt_count > item_count:
-                    break
-
-        self.queue.insert(i + 1, item)
-        self.queue.remove(item)
-
-    @staticmethod
-    def get_first_list(array):
-        """ Get first element of list or None """
-        return array[0] if array else None
+        lfus = [item[0] for item in items if item[1] == least]
+        for key in self.keys:
+            if key in lfus:
+                return key
     
